@@ -2,8 +2,6 @@
 
 import { getGlobal } from './prebidGlobal';
 import { flatten, uniques, isGptPubadsDefined, adUnitsFilter } from './utils';
-import { videoAdUnit, videoBidder, hasNonVideoBidder } from './video';
-import { nativeAdUnit, nativeBidder, hasNonNativeBidder } from './native';
 import { listenMessagesFromCreative } from './secureCreatives';
 import { userSync } from 'src/userSync.js';
 import { loadScript } from './adloader';
@@ -296,26 +294,6 @@ $$PREBID_GLOBAL$$.requestBids = function ({ bidsBackHandler, timeout, adUnits, a
     // otherwise derive adUnitCodes from adUnits
     adUnitCodes = adUnits && adUnits.map(unit => unit.code);
   }
-
-  // for video-enabled adUnits, only request bids for bidders that support video
-  adUnits.filter(videoAdUnit).filter(hasNonVideoBidder).forEach(adUnit => {
-    const nonVideoBidders = adUnit.bids
-      .filter(bid => !videoBidder(bid))
-      .map(bid => bid.bidder);
-
-    utils.logWarn(utils.unsupportedBidderMessage(adUnit, nonVideoBidders));
-    adUnit.bids = adUnit.bids.filter(videoBidder);
-  });
-
-  // for native-enabled adUnits, only request bids for bidders that support native
-  adUnits.filter(nativeAdUnit).filter(hasNonNativeBidder).forEach(adUnit => {
-    const nonNativeBidders = adUnit.bids
-      .filter(bid => !nativeBidder(bid))
-      .map(bid => bid.bidder);
-
-    utils.logWarn(utils.unsupportedBidderMessage(adUnit, nonNativeBidders));
-    adUnit.bids = adUnit.bids.filter(nativeBidder);
-  });
 
   if (!adUnits || adUnits.length === 0) {
     utils.logMessage('No adUnits configured. No bids requested.');

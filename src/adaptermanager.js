@@ -269,6 +269,7 @@ exports.callBids = (adUnits, bidRequests, addBidResponse, doneCb) => {
     // TODO : Do we check for bid in pool from here and skip calling adapter again ?
     const adapter = _bidderRegistry[bidRequest.bidderCode];
     if (adapter) {
+      removeUnSupportedMediaTypes(adapter, bidRequest);
       utils.logMessage(`CALLING BIDDER ======= ${bidRequest.bidderCode}`);
       events.emit(CONSTANTS.EVENTS.BID_REQUESTED, bidRequest);
       bidRequest.doneCbCallCount = 0;
@@ -277,6 +278,24 @@ exports.callBids = (adUnits, bidRequests, addBidResponse, doneCb) => {
     } else {
       utils.logError(`Adapter trying to be called which does not exist: ${bidRequest.bidderCode} adaptermanager.callBids`);
     }
+  });
+}
+
+function removeUnSupportedMediaTypes(adapter, bidRequest) {
+  const spec = adapter.getSpec && adapter.getSpec();
+  const supportedMediaTypes = (spec && spec.supportedMediaTypes) || 'banner';
+  bidRequest.bids.forEach(req => {
+    const mediaTypesCopy = utils.deepClone(req.mediaTypes);
+    const mediaTypes = Object.keys(mediaTypesCopy);
+
+    // delete keys that are not supported by this bidder
+    mediaTypes.forEach(type => {
+      if (!supportedMediaTypes.includes(type)) {
+        delete mediaTypesCopy[type];
+      }
+    });
+
+    req.mediaTypes = mediaTypesCopy;
   });
 }
 

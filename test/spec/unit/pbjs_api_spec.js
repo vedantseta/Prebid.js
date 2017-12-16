@@ -968,7 +968,7 @@ describe('Unit: Prebid Module', function () {
       });
     });
 
-    describe('#native', () => {
+    describe('#multiformat', () => {
       let spyCallBids;
       let createAuctionStub;
       let adUnits;
@@ -976,7 +976,11 @@ describe('Unit: Prebid Module', function () {
       before(() => {
         adUnits = [{
           code: 'adUnit-code',
-          mediaType: 'native',
+          mediaTypes: {
+            banner: {},
+            native: {},
+            video: {},
+          },
           sizes: [[300, 250], [300, 600]],
           bids: [
             {bidder: 'appnexus', params: {placementId: 'id'}},
@@ -995,17 +999,22 @@ describe('Unit: Prebid Module', function () {
         adaptermanager.callBids.restore();
       });
 
-      it('should only request native bidders on native adunits', () => {
-        // appnexus is a native bidder, appnexus is not
+      it('should only request supported mediaTypes for supported bidders', () => {
         $$PREBID_GLOBAL$$.requestBids({adUnits});
-        sinon.assert.calledOnce(adaptermanager.callBids);
         const spyArgs = adaptermanager.callBids.getCall(0);
-        const biddersCalled = spyArgs.args[0][0].bids;
-        expect(biddersCalled.length).to.equal(1);
+
+        const appnexus = spyArgs.args[1].filter(bidRequest => bidRequest.bidderCode === 'appnexus')[0];
+        const sampleBidder = spyArgs.args[1].filter(bidRequest => bidRequest.bidderCode === 'sampleBidder')[0];
+
+        const appnexusMediaTypes = Object.keys(appnexus.bids[0].mediaTypes);
+        const sampleBidderMediaTypes = Object.keys(sampleBidder.bids[0].mediaTypes);
+
+        expect(appnexusMediaTypes).to.deep.equal(['banner', 'native', 'video']);
+        expect(sampleBidderMediaTypes).to.deep.equal(['banner']);
       });
     });
 
-    describe('part 2', () => {
+    describe('native', () => {
       let spyCallBids;
       let createAuctionStub;
       let adUnits;
